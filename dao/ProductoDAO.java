@@ -1,4 +1,4 @@
-package como.alura.jdbc.dao;
+package com.alura.jdbc.dao;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,40 +27,28 @@ public class ProductoDAO {
 //				No SQLInjection
 				final PreparedStatement statement =  con.prepareStatement(
 						  "INSERT INTO TB_Producto "
-						+ "(nombre, descripcion, cantidad)"
-						+ "VALUES(?,?,?)", Statement.RETURN_GENERATED_KEYS);
+						+ "(nombre, descripcion, cantidad, categoria_id)"
+						+ "VALUES(?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
 				
 					try(statement) {
-						ejecutaRegistro(producto, statement);
-						
+						statement.setString(1, producto.getNombre());
+						statement.setString(2, producto.getDescripcion());
+						statement.setInt(3, producto.getCantidad());
+						statement.setInt(4, producto.getCategoriaId());
+						statement.execute();
+						final ResultSet resultset = statement.getGeneratedKeys();
+						try(resultset){
+							while(resultset.next()) {
+								producto.setId(resultset.getInt(1));
+								System.out.println(String.format("Fue insertado el producto %s", producto));
+							}
+						}
 					} 	
 			} catch (SQLException e) {
 				throw new RuntimeException(e);
 			}
 	}
-	
-	private void ejecutaRegistro(Producto producto, PreparedStatement statement)
-			throws SQLException {
-/*		ERROR logic test
- 		if(cantidad < 50) {
-		throw new RuntimeException("ERROR!");
-		}
-*/
-		statement.setString(1, producto.getNombre());
-		statement.setString(2, producto.getDescripcion());
-		statement.setInt(3, producto.getCantidad());
-		
-		statement.execute();
-		
-		final ResultSet resultset = statement.getGeneratedKeys();
-		
-		try(resultset){
-			while(resultset.next()) {
-				producto.setId(resultset.getInt(1));
-				System.out.println(String.format("Fue insertado el producto %s", producto));
-			}
-		}
-	}
+
 
 	public List<Producto> listar() {
 		List<Producto> resultado = new ArrayList<>();
@@ -90,10 +78,10 @@ public class ProductoDAO {
 					}
 				}
 			}
-			return resultado;
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+		return resultado;
 	}
 
 	public int eliminar(Integer id) {
@@ -140,6 +128,47 @@ public class ProductoDAO {
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public List<Producto> listar(Integer categoriaId) {
+		
+List<Producto> resultado = new ArrayList<>();
+		
+		ConnectionFactory factory = new ConnectionFactory();
+		final Connection con = factory.recuperaConnection();
+		
+		try(con){
+			var querySelect = "SELECT id, nombre, descripcion, cantidad "
+					+ " FROM TB_Producto"
+					+ " WHERE categoria_id = ?";
+			
+			final PreparedStatement statement = con.prepareStatement(
+					querySelect);
+			System.out.println(querySelect);
+			try(statement){
+				statement.setInt(1, categoriaId);
+				statement.execute();
+				
+				final ResultSet resulset = statement.getResultSet();
+				
+				try(resulset){
+					while(resulset.next()) {
+						Producto fila = new Producto(
+								resulset.getInt("id"),
+								resulset.getString("nombre"),
+								resulset.getString("descripcion"),
+								resulset.getInt("cantidad")
+								);
+						
+						resultado.add(fila);
+					}
+				}
+			}
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
+		return resultado;
+		
 	}
 
 //	WARNING
