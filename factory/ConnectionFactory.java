@@ -20,8 +20,12 @@ public class ConnectionFactory {
 		this.dataSource = pooledDataSource;
 	}
 	
-	public Connection recuperaConnection() throws SQLException {
+	public Connection recuperaConnection() {
 //		Design Pattern: Factory Method - Encapsulation - It centralizes the logic in one center
-		return this.dataSource.getConnection();
+		try {
+			return this.dataSource.getConnection();
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }
